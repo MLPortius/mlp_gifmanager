@@ -1,0 +1,10 @@
+# PYTHON VERSION: 3.11.7
+
+argparse==1.4.0
+pillow==9.4.0
+opencv-python==4.7.0.72
+imageio
+imageio[ffmpeg]==0.4.9
+imageio[pyav]==11.0.0
+tqdm==4.66.1
+moviepy==1.0.3
