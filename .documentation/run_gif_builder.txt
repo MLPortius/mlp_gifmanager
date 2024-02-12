@@ -1,0 +1,4 @@
+1. INSERT ORDERED IMAGES ON INPUT FOLDER
+2. CONDA RUN: activate img
+3. CONDA RUN: cd /d *./MLP_ImgManager
+4. CONDA RUN: python gif_builder.py -h
