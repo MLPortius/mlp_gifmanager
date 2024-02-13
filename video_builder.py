@@ -12,7 +12,6 @@ warnings.filterwarnings('ignore')
 
 from moviepy.editor import VideoFileClip
 
-
 #%% CONFIGURAR ENTORNO
 infolder = 'video_builder/input/'
 outfolder = 'video_builder/output/'
@@ -23,14 +22,16 @@ parser = argparse.ArgumentParser(description='Creates a video file from a gif fi
 sourcetype = 'gif' # ['zip', 'gif']
 
 parser.add_argument('-s', '--sourcetype', type=str, default='gif', choices=['gif','zip'], help='Use input folder gifs or unzip a gif folder')
-parser.add_argument('-v', '--verbose', action='store_true', type=bool, default=True, help='Activate verbosity of script')
-parser.add_argument('-r', '--reset', action='store_true', type=bool, default=False, help='Reset the output')
+parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Activate verbosity of script')
+parser.add_argument('-r', '--reset', action='store_true', default=False, help='Reset the output')
 
 args = parser.parse_args()
 
 sourcetype = args.sourcetype
 verbose = args.verbose
 reset = args.reset
+
+gifext = '.gif'
 
 #%% DEFINIR FUNCIONES AUXILIARES
 
@@ -78,28 +79,33 @@ def setup_zip(input_folder):
     return input_folder + 'unzip/'
 
 
-def load_gifs(input_folder):
+def load_gifs(input_folder, use_tqdm, gif_extension):
     
     # Leer archivos
-    input_files = os.listdir(input_folder)
+    input_files = [x for x in os.listdir(input_folder) if x.endswith(gif_extension)]
 
     # Crear diccionario
-    input_names = [x.split('.gif')[0] for x in input_files]
+    input_names = [x.split(gif_extension)[0] for x in input_files]
     input_paths = [input_folder +  x for x in input_files]
 
     # Ordenar archivos
     gif_files = []
-    for i in tqdm.tqdm(range(len(input_files)), ncols=100, desc='Loading gif files'):
-        gif_files.append({'name':input_names[i], 'file':input_files[i], 'path':input_paths[i]})
+
+    if use_tqdm:
+        for i in tqdm.tqdm(range(len(input_files)), ncols=100, desc='Loading gif files'):
+            gif_files.append({'name':input_names[i], 'file':input_files[i], 'path':input_paths[i]})
+    else:
+        for i in range(len(input_files)):
+            gif_files.append({'name':input_names[i], 'file':input_files[i], 'path':input_paths[i]})
 
     return gif_files
 
-def setup_reset(input_folder, output_folder, reset_flag):
+def setup_reset(input_folder, output_folder, reset_flag, gif_extension):
 
-    input_files_list = [x for x in os.listdir(input_folder) if x.endswith('.gif')]
+    input_files_list = [x for x in os.listdir(input_folder) if x.endswith(gif_extension)]
     output_files_list = [x for x in os.listdir(output_folder) if x.endswith('.mp4')]
 
-    name_input_list = [x.split('.gif')[0] for x in input_files_list]
+    name_input_list = [x.split(gif_extension)[0] for x in input_files_list]
 
     if reset_flag:
         
@@ -129,9 +135,12 @@ def setup_reset(input_folder, output_folder, reset_flag):
             # Cuando hay solo un output original
             elif ndict[name]['n'] == 1:
                 if ndict[name]['ofiles'][0].split('.' + 'mp4')[0][-2:] != '_0':
-                    output_names_dict[name] = name + '_0'
+                    os.rename(outfolder + ndict[name]['ofiles'][0], outfolder + ndict[name]['ofiles'][0].split('.' + 'mp4')[0] + '_0.mp4')
+                    output_names_dict[name] = name + '_1'
                 else:
                     output_names_dict[name] = name
+                
+
 
             # Cuando hay mas de un output
             else:
@@ -142,7 +151,7 @@ def setup_reset(input_folder, output_folder, reset_flag):
 
 #%% MODULO PRINCIPAL
 
-def __main__():
+def __main__(infolder, outfolder):
 
     if verbose:
         print('Starting process ...')
@@ -159,12 +168,14 @@ def __main__():
     # Configrar reseteo
     if verbose:
         print('     ... defining output')
-    output_names = setup_reset(input_folder=infolder, output_folder=outfolder, reset_flag=reset)
+    output_names = setup_reset(input_folder=infolder, output_folder=outfolder, reset_flag=reset, gif_extension=gifext)
 
     # Cargar gifs
     if verbose:
         print('     ... loading gif files')
-    gif_files = load_gifs(infolder)
+    gif_files = load_gifs(infolder, use_tqdm=verbose, gif_extension=gifext)
+    print('extension', gifext)
+    print('files', gif_files)
 
     # Crear videos
     if verbose:
@@ -181,10 +192,14 @@ def __main__():
         if verbose:
             print('\n --------------------------------------')
 
+    if sourcetype == 'zip':
+        shutil.rmtree(infolder)
+
     if verbose:
         print('\nProcess completed in ' + str(round((time.time() - st) / 60, 2)) + ' minutes.')
+        print('Generated videos for gif:', len(gif_files))
 
 #%% EJECUTAR MODULO PRINCIPAL
             
 if __name__ == '__main__':
-    __main__()
+    __main__(infolder=infolder, outfolder=outfolder)
