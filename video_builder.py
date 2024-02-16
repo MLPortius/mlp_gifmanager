@@ -47,9 +47,9 @@ def reset_output(output_folder):
 def create_video(input, output, verbose):
     clip = VideoFileClip(input)
     if verbose:
-        clip.write_videofile(output, codec='libx264')
+        clip.write_videofile(output, codec='libx264', bitrate='1500k')
     else:
-        clip.write_videofile(output, codec='libx264', logger=None)
+        clip.write_videofile(output, codec='libx264', logger=None, bitrate='1500k')
     clip.close()
 
 
